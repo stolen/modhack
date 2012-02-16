@@ -1,6 +1,6 @@
 -module(modhack).
 
--export([alias/2, overlay/2]).
+-export([alias/2, overlay/2, copy/2, patch/2]).
 
 % @doc Create alias 'Alias' for module 'Origin'
 alias(Origin, Alias) ->
@@ -22,6 +22,48 @@ overlay(Donors = [_|_], Acceptor) ->
     % Compile and load constructed module
     {ok, _, BinaryModule} = compile:forms(AbstractModule),
     code:load_binary(Acceptor, "/dev/null", BinaryModule).
+
+% @doc Create binary module copy with given name
+copy(Source, Destination) ->
+    {_, SrcBinary, _ModFilename} = code:get_object_code(Source),
+    ModFilename = "/dev/null",
+    ModBinary = beam_renamer:rename(SrcBinary, Destination),
+    {module, _} = code:load_binary(Destination, ModFilename, ModBinary).
+
+% @doc patch is something like overlay but it
+% backs up target module and includes it on
+% the end of overlay chain
+
+% If there are two or more donors, first create
+% single donor as overlay of all them
+patch(Target, Donors = [_, _|_]) ->
+    PolyDonor = list_to_atom("_" ++ atom_to_list(Target) ++ "_polydonor"),
+    {module, _} = overlay(Donors, PolyDonor),
+    patch(Target, PolyDonor);
+
+patch(Target, [Donor]) ->
+    patch(Target, Donor);
+
+patch(Target, Donor) ->
+    % Ensure Donor is module
+    [_|_] = Donor:module_info(exports),
+
+    % check if one of donors had special function that 
+    % returns the name for backed-up module
+    TargetBackup = try
+        Donor:'_module_backup'(Target)
+    catch 
+        % OK, I know, this is ugly. Please suggest better solution
+        _:_ -> try
+                Donor:'_module_backup'()
+            catch
+                _:_ -> list_to_atom("_" ++ atom_to_list(Target) ++ "_backup")
+            end
+    end,
+
+    code:unstick_mod(Target),
+    copy(Target, TargetBackup),
+    overlay([Donor, TargetBackup], Target).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
