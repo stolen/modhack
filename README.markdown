@@ -1,9 +1,9 @@
-### modhack ###
+# modhack #
 
 ## What is modhack? ##
 modhack is collection of utilities to manipulate wit Erlang modules.
 
-# Exported functions #
+### Exported functions ###
 * alias(Target, Alias) --- make an alias for module Target (indeed it is proxy)
 * copy(Source, Destination) --- copy module at binary-level
 * overlay([Mod1, Mod2|...], ResultName) --- combine modules into one supermodule
@@ -34,26 +34,24 @@ functions existing in Patches take precedence.
     8> modhack:patch(victim, mod1), victim:fun1().
     mod1
 
-
-## Example files sources ##
-# mod1.erl #
+### mod1.erl ###
     -module(mod1).
     -compile(export_all).
     fun1() -> ?MODULE.
 
-# mod2.erl #
+### mod2.erl ###
     -module(mod2).
     -compile(export_all).
     fun1() -> ?MODULE.
     fun2(Arg) -> {?MODULE, Arg}.
 
-# mod3.erl #
+### mod3.erl ###
     -module(mod3).
     -compile(export_all).
     fun2() -> ?MODULE.
     fun3() -> ?MODULE.
 
-# victim.erl #
+### victim.erl ###
     -module(victim).
     -compile(export_all).
     fun4() -> ?MODULE.
