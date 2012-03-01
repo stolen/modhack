@@ -5,6 +5,7 @@
   {registered, []},
   {applications, [
                   kernel,
+                  compiler,
                   stdlib
                  ]},
   {mod, { modhack_app, [modhack]}},
